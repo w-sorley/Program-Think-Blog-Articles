@@ -8,3 +8,7 @@ Script running pre-requisition:
 
 See also: https://github.com/matthewwithanm/python-markdownify
 
+Usage:
+
+`python3 program-think-md-gen.py`
+
