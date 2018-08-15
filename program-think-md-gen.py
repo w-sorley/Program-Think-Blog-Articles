@@ -88,13 +88,13 @@ def get_md_name_from_url(url):
 def url_to_markdown(url):
     print('Processing url: %s' % url)
     image_save_path = "images/"
-    file_name = get_md_name_from_url(url)
     html = get_html(url)
     md_text = make_star_title_bigger(convert_html_to_md(get_core_content(html)))
     matched_links_list = find_all_link(md_text)
     download_all_image(image_save_path, matched_links_list)
     md_text = replace_image_link_in_markdown_text(md_text, image_save_path, matched_links_list)
-    md_text = '# ' + get_article_title(html) + '\n\n-----\n\n' + md_text
+    file_name = md(get_article_title(html))
+    md_text = '# ' + file_name + '\n\n-----\n\n' + md_text
     write_markdown_file(file_name, md_text)
 
 
