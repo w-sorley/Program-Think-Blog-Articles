@@ -23,7 +23,26 @@ def get_core_content(html):
 
 
 def convert_html_to_md(html):
-    return md(html)
+    table_list = re.findall(r'<table.*?>.*?</table>', html, re.S | re.M)
+
+    table_id = 0
+
+    while table_id < len(table_list):
+        extra = 'table%03d' % table_id
+        html = html.replace(table_list[table_id], extra + table_list[table_id] + extra)
+        table_id += 1
+
+    md_text = md(html)
+
+    table_id = 0
+
+    while table_id < len(table_list):
+        extra = 'table%03d' % table_id
+        replace_table_text = re.findall(r'%s.*?%s' % (extra, extra), md_text, re.S | re.M)[0]
+        md_text = md_text.replace(replace_table_text, table_list[table_id])
+        table_id += 1
+
+    return md_text
 
 
 def make_star_title_bigger(md_text):
