@@ -125,8 +125,8 @@ def download_all_articles_in_url_list(url_list):
 
 
 def search_and_download_all_articles():
-    year = 2018
-    month = 6
+    year = 2009
+    month = 1
     current_year, current_month = get_current_year_and_month()
 
     while year <= current_year:
