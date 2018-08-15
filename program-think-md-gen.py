@@ -93,7 +93,7 @@ def url_to_markdown(url):
     matched_links_list = find_all_link(md_text)
     download_all_image(image_save_path, matched_links_list)
     md_text = replace_image_link_in_markdown_text(md_text, image_save_path, matched_links_list)
-    file_name = md(get_article_title(html))
+    file_name = md(get_article_title(html)).replace('/', '-')
     md_text = '# ' + file_name + '\n\n-----\n\n' + md_text
     write_markdown_file(file_name, md_text)
 
