@@ -23,23 +23,28 @@ def get_core_content(html):
 
 
 def convert_html_to_md(html):
-    table_list = re.findall(r'<table.*?>.*?</table>', html, re.S | re.M)
+    html = html.replace('</td></td>', '</td>')    # Fixed incorrect html syntax
+
+    table_list = re.findall(r'<center><table.*?>.*?</table></center>', html, re.S | re.M)
 
     table_id = 0
 
     while table_id < len(table_list):
-        extra = 'table%03d' % table_id
+        extra = ' table%03d ' % table_id
         html = html.replace(table_list[table_id], extra + table_list[table_id] + extra)
         table_id += 1
 
     md_text = md(html)
 
+    return md_text
+
     table_id = 0
 
     while table_id < len(table_list):
         extra = 'table%03d' % table_id
-        replace_table_text = re.findall(r'%s.*?%s' % (extra, extra), md_text, re.S | re.M)[0]
-        md_text = md_text.replace(replace_table_text, table_list[table_id])
+        replace_table_text_list = re.findall(r'%s.*?%s' % (extra, extra), md_text, re.S | re.M)
+        if replace_table_text_list is not None and len(replace_table_text_list) > 0:
+            md_text = md_text.replace(replace_table_text_list[0], table_list[table_id])
         table_id += 1
 
     return md_text
@@ -120,7 +125,8 @@ def url_to_markdown(url):
 
 
 def test_url_to_markdown():
-    url = 'https://program-think.blogspot.com/2018/08/USA-Containment-Strategies-in-Cold-War.html'
+    # url = 'https://program-think.blogspot.com/2018/08/USA-Containment-Strategies-in-Cold-War.html'
+    url = 'https://program-think.blogspot.com/2009/05/how-to-break-through-gfw.html'
     url_to_markdown(url)
 
 
