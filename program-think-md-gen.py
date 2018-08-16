@@ -45,8 +45,10 @@ def convert_html_to_md(html):
     return md_text
 
 
-def make_star_title_bigger(md_text):
-    return md_text.replace('★', '## ★')
+def fix_markdown_syntax_error(md_text):
+    md_text = md_text.replace('★', '## ★')
+    md_text = md_text.replace('** ', '**')
+    return md_text
 
 
 def write_markdown_file(file_name, md_text):
@@ -108,13 +110,13 @@ def url_to_markdown(url):
     print('Processing url: %s' % url)
     image_save_path = "images/"
     html = get_html(url)
-    md_text = make_star_title_bigger(convert_html_to_md(get_core_content(html)))
+    md_text = fix_markdown_syntax_error(convert_html_to_md(get_core_content(html)))
     matched_links_list = find_all_link(md_text)
     download_all_image(image_save_path, matched_links_list)
     md_text = replace_image_link_in_markdown_text(md_text, image_save_path, matched_links_list)
     title_name = md(get_article_title(html)).replace('/', '-')
     md_text = '# ' + title_name + '\n\n-----\n\n' + md_text
-    write_markdown_file(title_name + '.md', md_text)
+    write_markdown_file(title_name.strip(' ') + '.md', md_text)
 
 
 def test_url_to_markdown():
