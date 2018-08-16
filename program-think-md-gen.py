@@ -36,8 +36,6 @@ def convert_html_to_md(html):
 
     md_text = md(html)
 
-    return md_text
-
     table_id = 0
 
     while table_id < len(table_list):
