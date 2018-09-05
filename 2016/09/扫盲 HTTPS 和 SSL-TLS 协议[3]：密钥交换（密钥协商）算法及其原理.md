@@ -3,10 +3,11 @@
 -----
 
  先插播一个好消息：  
- 本月初俺发了一篇《[老流氓CNNIC 的接班人——聊聊“沃通/WoSign”的那些破事儿](https://program-think.blogspot.com/2016/09/About-WoSign.html)》。前2天看到新闻说，Mozilla 组织（Firefox）已经把沃通的根证书加入黑名单了，为期一年。一年之后看它的表现再决定是否永久性屏蔽。  
+ 本月初俺发了一篇《[老流氓 CNNIC 的接班人——聊聊“沃通/WoSign”的那些破事儿](https://program-think.blogspot.com/2016/09/About-WoSign.html)》。前2天看到新闻说，Mozilla 组织（Firefox）已经把沃通的根证书加入黑名单了，为期一年。一年之后看它的表现再决定是否永久性屏蔽。  
  对这种流氓公司，就应该给它点颜色看看（老实说，俺还觉得处罚偏轻了）  
    
   本系列的[前一篇](https://program-think.blogspot.com/2014/11/https-ssl-tls-2.html)，咱们聊了“密钥交换的难点”以及“证书体系”的必要性。今天这篇来介绍一下实战中使用的“密钥协商算法”。program-think  
+   
    
  ## ★密钥交换/协商机制要达到啥目的？
 -----------------
@@ -142,8 +143,8 @@
 >  A = (g**a) % p  
 >  B = (g**b) % p  
 >    
->  print((B**a) % p) # 47  
->  print((A**b) % p) # 47 最后打印出来的两个 47 就是双方都计算出了【相同的】结果（这个数值可以用作之后的“会话密钥”）  
+>  print((B**a) % p) # 此处输出 47  
+>  print((A**b) % p) # 此处输出 47 最后打印出来的两个 47 就是双方都计算出了【相同的】结果（这个数值可以用作之后的“会话密钥”）  
    
  上面因为是举例，用的数字都比较小。在实战中需要注意如下几点，以降低被攻击的风险。  
  1. p 必须是质数且足够大（至少300位）  
@@ -180,11 +181,8 @@
  （下一篇讲具体协议的时候会提到：协议初始化/握手阶段的末尾，双方都会向对方发送一段“验证性的密文”，这段密文用各自的会话密钥进行【对称】加密，如果双方的会话密钥不一致，这一步就会失败，进而导致握手失败，连接终止）  
    
    
- ## ★DH 的变种
--------
-
-  
- ### ◇基于“椭圆曲线”的 ECDH
+ ## ★DH 的变种——基于“椭圆曲线”的 ECDH
+-----------------------
 
   
  DH 算法有一个变种，称之为 ECDH（全称是“Elliptic Curve Diffie-Hellman”）。维基条目在“[这里](https://en.wikipedia.org/wiki/Elliptic_Curve_Diffie-Hellman)”  
@@ -194,13 +192,6 @@
    
  ECDH 的数学原理比 DH 更复杂。考虑到本文读者大都【不是】数学系出身，俺就不展开了。  
  ECDH 跟 DH 一样，也是【无认证】的。同样需要跟其它签名算法（比如 [RSA](https://en.wikipedia.org/wiki/RSA_(cryptosystem))、[DSA](https://en.wikipedia.org/wiki/Digital_Signature_Algorithm)、[ECDSA](https://en.wikipedia.org/wiki/Elliptic_Curve_DSA)）配合。  
-   
- ### ◇对 DH 和 ECDH 进行“临时密钥”的改良——DHE 和 ECDHE
-
-  
- 刚才介绍的 DH 和 ECDH，其密钥是持久的（静态的）。也就是说，通讯双方生成各自的密钥之后，就长时间用下去。这么干当然比较省事儿（节约性能），但是存在某种安全隐患——无法做到“前向保密”（洋文是“[forward secrecy](https://en.wikipedia.org/wiki/Forward_secrecy)”）。  
- 为了做到“前向保密”，采用“临时密钥”（洋文是“ephemeral key”）的方式对 DH 和 ECDH 进行改良。于是得到两种新的算法——DHE 和 ECDHE。（这两种新算法的名称，就是在原有名称后面加上字母 E 表示 ephemeral）。其实算法还是一样的，只是对每个会话都要重新协商一次密钥，且密钥用完就丢弃。  
- （估计很多同学不太了解“前向保密”这个概念。俺会在本系列中单独开一帖，介绍“前向保密”的概念及其好处）  
    
    
  ## ★基于 PSK 的密钥协商
@@ -267,20 +258,61 @@
  （由于 SRP 用的不多，俺偷懒一下，略去此小节）  
    
    
- ## ★各种组合的一览表
----------
+ ## ★扫盲一下“前向保密（PFS）”
+----------------
 
   
- <center><table border="1" cellspacing="0"><tbody>
+ ### ◇【回溯性破解】及其危险性
+
+  
+ 从技术上讲，攻击者如果能够对通讯双方进行【嗅探】，也就能够把通讯双方的传输数据存储下来。如果攻击者比较牛逼，以至于能拿到通讯双方的私钥，那就【有可能】根据私钥推导出会话密钥，从而解密之前存储的历史数据。  
+ 有些同学可能会问：攻击者如何拿到私钥捏？常见的情况有如下几种：  
+ 1. 入侵双方的操作系统（搞定了操作系统自然就能搞定系统中存储的私钥）；  
+ 2. 利用协议【设计】的漏洞（能达到这种水准的，通常是 NSA 之类的国家队，养了足够多的密码学家）  
+ 3. 利用协议【实现】的安全漏洞（比如前几年惊艳全球的“[心脏滴血漏洞](https://program-think.blogspot.com/2014/04/openssl-heartbleed.html)”，【有可能】会导致私钥泄漏。协议本身没问题，是 OpenSSL 的【代码实现】出了 bug）  
+ 4. 通过[社会工程学](https://program-think.blogspot.com/2009/05/social-engineering-0-overview.html)（比如政府部门可以直接要求本国的网站交出私钥）。  
+   
+ ### ◇容易遭受回溯破解的密钥协商算法
+
+  
+ 本文前面提到了几种密钥交换/协商算法，如下这几种特别容易遭受“回溯破解”。  
+   
+ **RSA** 
+ 攻击者事先存储了通讯的密文（历史数据）。  
+ 由于 RSA 的私钥是稳定的（长期不变）。假设有一天，攻击者拿到了 RSA 的私钥，就可以用这个私钥解密握手过程的密文，从而得到会话密钥（session key），然后用会话密钥解密会话的密文，得到会话的明文。  
+   
+ **PSK（Pre-Shared Key）** 
+ 攻击者事先存储了通讯的密文（历史数据）。  
+ 由于双方共享的 key 是稳定的（长期不变）。如果有一天，攻击者拿到了通讯双方共享的 key，就可以用这个 key 解密握手过程的密文，从而得到会话密钥（session key），然后用会话密钥解密会话的密文，得到会话的明文。  
+   
+ **SRP（Secure Remote Password）** 
+ 攻击者事先存储了通讯的密文（历史数据）。  
+ 由于双方共享的 password & salt 是稳定的（长期不变）。如果有一天，攻击者拿到了通讯双方共享的 password 和 salt，就可以用来解密握手过程的密文，从而得到会话密钥（session key），然后用会话密钥解密会话的密文，得到会话的明文。  
+   
+ ### ◇解决方法——“前向保密/完美正向加密”
+
+  
+ 相比前面这几种密钥协商算法，DH 和 ECDH 是比较能抗“回溯破解”滴。为啥这么说捏？下面解释：  
+ 对于 DH 算法，通讯双方握手需要生成各自的私钥（前面提到的整数 a 和 b），然后根据 DH 算法计算得出会话密钥。换句话说，会话密钥依赖于双方的私钥 a 与 b。DH 算法的优势在于——双方的私钥（a & b）是可以【动态生成】滴！  
+ 为了对抗“回溯性破解”，可以强制要求双方每次都生成【随机的】私钥。而且每次生成的两个私钥用完就丢弃（销毁）。如此一来，攻击者就难以破解过往的历史数据。DH 算法经过如此改良之后叫做 DHE（追加的字母 E 表示 ephemeral）。  
+ 与 DH 类似，ECDH 也可以做类似的改良，变成 ECDHE，以对抗“回溯破解”。  
+   
+ 能够对抗“回溯破解”的密钥交换算法，被称为“前向保密”，洋文叫“forward secrecy”，缩写为 FS。它还有另一个称呼——“完美正向加密”（洋文是“perfect forward secrecy”，缩写为 PFS）。关于这方面的更多介绍，可以参见维基百科（链接在“[这里](https://en.wikipedia.org/wiki/Forward_secrecy)”）。  
+   
+   
+ ## ★各种算法组合的一览表
+-----------
+
+  
+ <center><table border="1" cellspacing="0" cellpadding="3"><tbody>
 <tr><th>算法组合</th><th>密钥交换</th><th>身份认证</th><th>是否会遭遇<br />
 中间人攻击</th><th>是否具备<br />
-前向保密</th><th>SSL 2.0</th><th>SSL 3.0</th><th>TLS 1.0</th><th>TLS 1.1</th><th>TLS 1.2</th><th>TLS 1.3<br />
-&#65288;草案&#65289;</th></tr>
+前向保密</th><th>SSL 2.0</th><th>SSL 3.0</th><th>TLS 1.0</th><th>TLS 1.1</th><th>TLS 1.2</th><th>TLS 1.3</th></tr>
 <tr><td>RSA</td><td>RSA</td><td>RSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>DH-RSA</td><td>DH</td><td>RSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>DH-DSA</td><td>DH</td><td>DSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>DHE-RSA</td><td>DHE</td><td>RSA</td> <td style="background:LightGreen;">否</td><td style="background:LightGreen;">是</td> <td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td></tr>
-<tr><td>DHE-DSA</td><td>DHE</td><td>DSA</td> <td style="background:LightGreen;">否</td><td style="background:LightGreen;">是</td> <td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td></tr>
+<tr><td>DHE-DSA</td><td>DHE</td><td>DSA</td> <td style="background:LightGreen;">否</td><td style="background:LightGreen;">是</td> <td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>ECDH-RSA</td><td>ECDH</td><td>RSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>ECDH-ECDSA</td><td>ECDH</td><td>ECDSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>ECDHE-RSA</td><td>DHE</td><td>RSA</td> <td style="background:LightGreen;">否</td><td style="background:LightGreen;">是</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td></tr>
@@ -291,10 +323,11 @@
 <tr><td>ECDHE-PSK</td><td>DHE</td><td>PSK</td> <td style="background:LightGreen;">否</td><td style="background:LightGreen;">是</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td>&#65311;</td></tr>
 <tr><td>SRP</td><td>SRP</td><td>SRP</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td>&#65311;</td></tr>
 <tr><td>SRP-RSA</td><td>SRP</td><td>RSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td>&#65311;</td></tr>
-<tr><td>SRP-DSA</td><td>SRP</td><td>DSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td>&#65311;</td></tr>
+<tr><td>SRP-DSA</td><td>SRP</td><td>DSA</td> <td style="background:LightGreen;">否</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>DH-ANON</td><td>DH</td><td style="background:Red;">无</td> <td style="background:Red;">是</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 <tr><td>ECDH-ANON</td><td>ECDH</td><td style="background:Red;">无</td> <td style="background:Red;">是</td><td style="background:Pink;">否</td> <td style="background:Silver;">否</td><td style="background:Silver;">否</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:LightGreen;">是</td><td style="background:Silver;">否</td></tr>
 </tbody></table></center>   
- （截至本文发布时，TLS 1.3 还处于“草案”阶段，尚未正式发布。等到它正式发布，俺会把上述表格的最后一列再补充一下）  
+ （注：2018年8月，TLS 1.3 正式发布。俺又对本文略作补充）  
+   
    
  [回到本系列的目录](https://program-think.blogspot.com/2014/11/https-ssl-tls-0.html#index) 

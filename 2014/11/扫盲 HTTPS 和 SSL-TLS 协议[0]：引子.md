@@ -13,7 +13,8 @@
  1. [背景知识、协议的需求、设计的难点](https://program-think.blogspot.com/2014/11/https-ssl-tls-1.html)  
  2. [可靠密钥交换的难点，以及身份认证的必要性](https://program-think.blogspot.com/2014/11/https-ssl-tls-2.html)  
  3. [扫盲几种密钥交换（密钥协商）算法](https://program-think.blogspot.com/2016/09/https-ssl-tls-3.html)  
- 4. SSL/TLS 协议的实现  
- 5. 针对 HTTPS 的各种攻击手法  
- 6. 各种相应的防范措施  
+ 4. [历史版本的演变及 Record 协议的细节](https://program-think.blogspot.com/2018/09/https-ssl-tls-4.html)  
+ 5. 握手过程的细节  
+ 6. 针对 HTTPS 的各种攻击手法  
+ 7. 各种相应的防范措施  
  
